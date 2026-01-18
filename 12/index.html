@@ -19,11 +19,7 @@
             --radius-sm: 8px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background: var(--bg);
@@ -59,16 +55,9 @@
             line-height: 1.2;
         }
 
-        p {
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-        }
+        p { color: var(--text-secondary); margin-bottom: 2rem; }
 
-        .buttons {
-            display: grid;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
+        .buttons { display: grid; gap: 1rem; margin-top: 2rem; }
 
         .btn {
             padding: 1rem 2rem;
@@ -95,25 +84,11 @@
             transition: opacity 0.2s ease;
         }
 
-        .btn:hover::before {
-            opacity: 0.1;
-        }
+        .btn:hover::before { opacity: 0.1; }
 
-        .btn--primary {
-            background: var(--primary);
-            color: var(--bg);
-        }
-
-        .btn--secondary {
-            background: none;
-            color: var(--text-secondary);
-            border: 1px solid var(--glass);
-        }
-
-        .btn--secondary:hover {
-            color: var(--text);
-            border-color: var(--text-secondary);
-        }
+        .btn--primary { background: var(--primary); color: var(--bg); }
+        .btn--secondary { background: none; color: var(--text-secondary); border: 1px solid var(--glass); }
+        .btn--secondary:hover { color: var(--text); border-color: var(--text-secondary); }
 
         .progress {
             height: 4px;
@@ -148,76 +123,14 @@
             margin-top: 1rem;
         }
 
-        @keyframes fadeUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 640px) {
-            .container {
-                padding: 1.5rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            .btn {
-                padding: 0.875rem 1.5rem;
-            }
+            .container { padding: 1.5rem; }
+            h1 { font-size: 1.75rem; }
+            .btn { padding: 0.875rem 1.5rem; }
         }
     </style>
-    <script>
-        if (typeof WebAssembly === "undefined" || typeof WebAssembly.Suspending === "undefined") {
-            loadPage('play.html');
-        }
-
-        let timerDuration = 20;
-        let timerInterval;
-
-        function startTimer() {
-            const progressBarElement = document.querySelector('.progress__bar');
-            const timerTextElement = document.querySelector('.timer-text');
-            let timeLeft = timerDuration;
-
-            progressBarElement.style.width = '0%';
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                const progress = ((timerDuration - timeLeft) / timerDuration) * 100;
-                progressBarElement.style.width = `${progress}%`;
-                timerTextElement.textContent = `Auto-redirect in ${timeLeft} seconds...`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    loadPage('wasm.html'); // Загружаем страницу через JS
-                }
-            }, 1000);
-        }
-
-        function cancelTimer() {
-            clearInterval(timerInterval);
-            document.querySelector('.timer-text').textContent = 'Redirect cancelled';
-            document.querySelector('.progress__bar').style.width = '0%';
-        }
-
-        function loadPage(url) {
-            fetch(url)
-                .then(response => response.text())
-                .then(content => {
-                    document.open();
-                    document.write(content);
-                    document.close();
-                })
-                .catch(error => console.error('Error loading page:', error));
-        }
-
-        window.addEventListener('load', () => {
-            startTimer();
-            document.body.classList.add('loaded');
-        });
-    </script>
 </head>
 <body>
     <div class="container">
@@ -231,13 +144,109 @@
         <div class="timer-text">Auto-redirect in 20 seconds...</div>
 
         <div class="buttons">
-            <a href="#" class="btn btn--secondary" onclick="cancelTimer(); loadPage('play.html'); return false;">
+            <button id="btn-js" class="btn btn--secondary">
                 Continue with JavaScript
-            </a>
-            <a href="#" class="btn btn--primary" onclick="cancelTimer(); loadPage('wasm.html'); return false;">
+            </button>
+            <button id="btn-wasm" class="btn btn--primary">
                 Launch WebAssembly Version
-            </a>
+            </button>
         </div>
     </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            let timerInterval;
+            const TIMER_DURATION = 20;
+
+            function loadPage(url) {
+                if (timerInterval) clearInterval(timerInterval);
+                
+                const container = document.querySelector('.container');
+                if (container) container.style.opacity = '0.5';
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.text();
+                    })
+                    .then(content => {
+                        document.body.innerHTML = '';
+                        document.open();
+                        document.write(content);
+                        document.close();
+                    })
+                    .catch(error => {
+                        console.error('Loader error:', error);
+                        if(container) {
+                            container.style.opacity = '1';
+                            alert("Failed to load: " + url);
+                        }
+                    });
+            }
+
+            function startTimer() {
+                const progressBar = document.querySelector('.progress__bar');
+                const timerText = document.querySelector('.timer-text');
+                
+                if (!progressBar || !timerText) return;
+
+                let timeLeft = TIMER_DURATION;
+                
+                progressBar.style.width = '0%';
+                
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    const progress = ((TIMER_DURATION - timeLeft) / TIMER_DURATION) * 100;
+                    
+                    if (progressBar) progressBar.style.width = `${progress}%`;
+                    if (timerText) timerText.textContent = `Auto-redirect in ${timeLeft} seconds...`;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        loadPage('wasm.html');
+                    }
+                }, 1000);
+            }
+
+            function init() {
+                // Feature detection
+                const hasWasm = typeof WebAssembly !== "undefined" && typeof WebAssembly.Suspending !== "undefined";
+
+                if (!hasWasm) {
+                    // Immediate redirect if unsupported
+                    loadPage('play.html');
+                    return;
+                }
+
+                // Attach listeners
+                const btnJs = document.getElementById('btn-js');
+                const btnWasm = document.getElementById('btn-wasm');
+
+                if (btnJs) {
+                    btnJs.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadPage('play.html');
+                    });
+                }
+
+                if (btnWasm) {
+                    btnWasm.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadPage('wasm.html');
+                    });
+                }
+
+                startTimer();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
 </body>
 </html>
