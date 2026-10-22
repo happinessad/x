@@ -62,18 +62,15 @@
       function updateProgress(percent) {
         const bar = document.querySelector('#progressBar div');
         if (bar) {
-            bar.style.width = percent + '%';
-            bar.textContent = percent + '%';
+          bar.style.width = percent + '%';
+          bar.textContent = percent + '%';
         }
       }
 
-      function loadFile(url, cachedETag) {
+      function loadFile(url) {
         return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open('GET', url, true);
-          if (cachedETag) {
-            xhr.setRequestHeader('If-None-Match', cachedETag);
-          }
           xhr.responseType = 'text';
 
           xhr.onprogress = (e) => {
@@ -82,16 +79,11 @@
             }
           };
 
-          xhr.onreadystatechange = () => {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-              if (xhr.status === 304) {
-                resolve({ fromCache: true });
-              } else if (xhr.status >= 200 && xhr.status < 300) {
-                const etag = xhr.getResponseHeader('ETag');
-                resolve({ data: xhr.responseText, etag });
-              } else {
-                reject('Error loading file: ' + xhr.status);
-              }
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.responseText);
+            } else {
+              reject('Error loading file: ' + xhr.status);
             }
           };
           xhr.onerror = () => reject('XHR Network error');
@@ -102,18 +94,15 @@
       async function init() {
         try {
           const db = await openDB();
-          let cached = await getFile(db, URL_TO_LOAD);
-          const cachedETag = cached ? cached.etag : null;
-
-          const result = await loadFile(URL_TO_LOAD, cachedETag);
+          const cached = await getFile(db, URL_TO_LOAD);
 
           let fileContent;
-          if (result.fromCache && cached) {
-            fileContent = cached.content;
+          if (cached && cached.content) {
             updateProgress(100);
+            fileContent = cached.content;
           } else {
-            fileContent = result.data;
-            await saveFile(db, { url: URL_TO_LOAD, content: fileContent, etag: result.etag });
+            fileContent = await loadFile(URL_TO_LOAD);
+            await saveFile(db, { url: URL_TO_LOAD, content: fileContent });
           }
 
           document.open();
